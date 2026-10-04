@@ -1,184 +1,113 @@
-# AWS Cloud Security & Monitoring Lab
+# AWS Cloud Security & Security Monitoring Lab
 
-A hands-on AWS security lab focused on securing cloud storage, implementing audit logging, detecting suspicious activity, and building an automated security alerting pipeline using Amazon S3, AWS CloudTrail, Amazon CloudWatch, and Amazon SNS.
+A practical AWS cloud security lab implementing **S3 security, CloudTrail data-event monitoring, CloudWatch detection, and automated SNS alerting**.
 
-The lab simulates a real-world cloud security monitoring workflow in which an S3 object upload is detected through CloudTrail and automatically generates a CloudWatch security alert and email notification.
-
----
-
-## Objective
-
-The objective of this project was to build and demonstrate practical cloud security controls across AWS, including:
-
-- Secure S3 bucket configuration
-- Identity and access control
-- CloudTrail audit logging
-- S3 data-event monitoring
-- CloudWatch log analysis
-- Security event detection
-- Custom metric creation
-- Automated security alerting
-- SNS-based email notifications
-
-The project focuses on understanding how cloud activity can be monitored from the original AWS event through to automated security notification.
-
----
+The project demonstrates an end-to-end security monitoring workflow where an S3 object upload is detected, logged, converted into a CloudWatch metric, evaluated by a security alarm, and reported through an automated email notification.
 
 ## Architecture
 
-```text
-                    AWS S3
-                      │
-                      │ Object Upload
-                      ▼
-                AWS CloudTrail
-                      │
-                      │ PutObject Data Event
-                      ▼
-              CloudWatch Logs
-                      │
-                      │ Filter: PutObject
-                      ▼
-          CloudWatch Metric Filter
-                      │
-                      ▼
-          S3PutObjectCount Metric
-                      │
-                      ▼
-             CloudWatch Alarm
-                      │
-                      │ Alarm State
-                      ▼
-                 Amazon SNS
-                      │
-                      ▼
-                Email Alert
+**S3 Object Upload → CloudTrail → CloudWatch Logs → Metric Filter → CloudWatch Metric → CloudWatch Alarm → SNS → Email Alert**
 
-```
-## Security Workflow
+## Project Objectives
 
-### 1. Secure S3 Configuration
+- Configure a secure Amazon S3 bucket
+- Enable S3 object-level monitoring using AWS CloudTrail
+- Centralize CloudTrail events using CloudWatch Logs
+- Detect `PutObject` activity using a CloudWatch metric filter
+- Trigger a CloudWatch security alarm when the detection threshold is reached
+- Send automated security notifications using Amazon SNS
+- Build and validate an end-to-end cloud security monitoring workflow
 
-Created a dedicated S3 bucket for the security lab and configured security-focused storage controls.
+## AWS Services Used
 
-Implemented:
+| AWS Service | Purpose |
+|---|---|
+| **Amazon S3** | Secure storage and monitored object activity |
+| **AWS CloudTrail** | S3 object-level audit logging |
+| **Amazon CloudWatch Logs** | Centralized security event logging |
+| **CloudWatch Metric Filter** | Detection of `PutObject` events |
+| **CloudWatch Alarm** | Security threshold monitoring |
+| **Amazon SNS** | Automated email alerting |
 
-- Block Public Access
-- Bucket owner enforced object ownership
-- ACLs disabled
-- Bucket versioning enabled
-- Server-side encryption using SSE-S3
-- S3 Bucket Key enabled
-- Static website hosting disabled
+## Security Controls
 
-The bucket was intentionally configured with public access blocked to reduce the risk of unintended object exposure.
+The S3 bucket was configured with:
 
----
+- **Block Public Access**
+- **Bucket Owner Enforced** object ownership
+- **ACLs disabled**
+- **Versioning enabled**
+- **SSE-S3 server-side encryption**
+- **S3 Bucket Key enabled**
 
-## 2. AWS CloudTrail
+CloudTrail was configured with targeted S3 data-event logging for the lab bucket.
 
-Configured an AWS CloudTrail trail to record AWS activity.
+## Detection Workflow
 
-### Management Events
+### 1. S3 Object Upload
 
-Enabled:
+A test object is uploaded to the monitored S3 bucket, generating a `PutObject` event.
 
-- Read events
-- Write events
+### 2. CloudTrail Logging
 
-### S3 Data Events
+CloudTrail captures the S3 object-level activity as a data event.
 
-Configured CloudTrail to monitor object-level activity for the dedicated lab S3 bucket.
+### 3. CloudWatch Logs
 
-The monitored event includes:
+The CloudTrail event is delivered to:
 
-    PutObject
+`/aws/cloudtrail/security-lab`
 
-This allows object upload activity to be detected rather than relying only on higher-level management events.
+### 4. Metric Filter
 
----
+The following CloudWatch metric filter detects `PutObject` events:
 
-## 3. CloudWatch Log Integration
+`{ $.eventName = "PutObject" }`
 
-Configured the CloudTrail logs to be delivered to:
+The filter publishes the custom metric:
 
-    /aws/cloudtrail/security-lab
+`SecurityLab / S3PutObjectCount`
 
-CloudWatch Logs was then used to inspect and search the CloudTrail events generated by the lab.
+### 5. CloudWatch Alarm
 
-Example event:
+The `S3-PutObject-Security-Alert` alarm monitors the custom metric and triggers when the configured threshold of **1 event within 5 minutes** is reached.
 
-    eventSource: s3.amazonaws.com
-    eventName: PutObject
-    awsRegion: eu-north-1
+### 6. SNS Notification
 
----
+When the alarm enters the **ALARM** state, Amazon SNS sends an automated email notification containing the alarm details.
 
-## 4. S3 PutObject Detection
+## Evidence
 
-Created a CloudWatch metric filter:
+The project was tested successfully using an actual S3 object upload. The resulting CloudTrail event was captured in CloudWatch Logs, detected by the metric filter, used to trigger the CloudWatch alarm, and followed by an SNS email notification.
 
-    S3-PutObject-Detection
+The repository contains supporting screenshots demonstrating each stage of the workflow.
 
-Filter pattern:
+## Documentation
 
-    { $.eventName = "PutObject" }
+📄 **[View the Full AWS Cloud Security Lab Report](./AWS-Cloud-Security-Monitoring-Lab-Report.pdf)**
 
-The filter detects S3 object upload events recorded by CloudTrail.
+The full report contains:
 
-Each matching event increments the custom CloudWatch metric:
+- S3 security configuration
+- CloudTrail data-event configuration
+- CloudWatch log integration
+- `PutObject` event evidence
+- Metric filter configuration
+- CloudWatch alarm configuration
+- SNS email alert
+- End-to-end architecture
+- Security and cost considerations
 
-    Namespace: SecurityLab
-    Metric: S3PutObjectCount
-    Value: 1
+## Skills Demonstrated
 
----
+**Cloud Security • AWS • S3 Security • CloudTrail • CloudWatch • Security Monitoring • Threat Detection • Log Analysis • Security Alerting • SNS • Cloud Architecture**
 
-## 5. CloudWatch Security Alarm
+## Cost & Security Considerations
 
-Created the following CloudWatch alarm:
+CloudTrail data-event monitoring was scoped specifically to the lab S3 bucket to avoid unnecessary event collection. An AWS budget alert was also configured to monitor unexpected spending.
 
-    S3-PutObject-Security-Alert
+Sensitive information such as credentials, account identifiers, email addresses, and raw CloudTrail logs should not be committed to the public repository.
 
-Alarm condition:
+## Disclaimer
 
-    S3PutObjectCount >= 1
-
-Evaluation period:
-
-    5 minutes
-
-This means the alarm enters the ALARM state when at least one S3 `PutObject` event is detected during a five-minute period.
-
----
-
-## 6. Automated SNS Notification
-
-Configured an Amazon SNS topic:
-
-    SecurityLab-S3-Alerts
-
-The CloudWatch alarm publishes notifications to the SNS topic whenever the alarm enters the ALARM state.
-
-The notification was delivered successfully through email.
-
-### Result
-
-A test object upload generated the following sequence:
-
-    S3 Upload
-       ↓
-    CloudTrail PutObject
-       ↓
-    CloudWatch Logs
-       ↓
-    Metric Filter Match
-       ↓
-    S3PutObjectCount = 1
-       ↓
-    CloudWatch Alarm
-       ↓
-    SNS Notification
-       ↓
-    Email Alert
-
+This project was developed as an educational cybersecurity lab using a personal AWS environment. Test events and configurations were created specifically for security monitoring and detection purposes.
